@@ -9,6 +9,7 @@ public class H4J_HidIO implements DeviceIO {
     private HidDevice device;
 
     private boolean streaming;
+    private boolean feature = true;
 
 
     public H4J_HidIO(DeviceOptions dOpts) throws DeviceException {
@@ -49,10 +50,16 @@ public class H4J_HidIO implements DeviceIO {
         return UsbUtil.toHexString(device.getProductId());
     }
 
-    public byte[] readData(int responseSize, Byte unused) throws DeviceException {
+    public byte[] readData(int responseSize, Byte reportId) throws DeviceException {
         byte[] response = new byte[responseSize];
 
-        int read = device.read(response);
+        int read;
+        if (feature) {
+            if (reportId == null) { reportId = (byte)0x00; }
+            read = device.getFeatureReport(response, reportId);
+        } else {
+            read = device.read(response);
+        }
         if (read == -1) {
             throw new DeviceException("Failed to read from device");
         }
@@ -63,7 +70,12 @@ public class H4J_HidIO implements DeviceIO {
     public void sendData(byte[] data, Byte reportId) throws DeviceException {
         if (reportId == null) { reportId = (byte)0x00; }
 
-        int wrote = device.write(data, data.length, reportId);
+        int wrote;
+        if (feature) {
+            wrote = device.sendFeatureReport(data, reportId);
+        } else {
+            wrote = device.write(data, data.length, reportId);
+        }
         if (wrote == -1) {
             throw new DeviceException("Failed to write to device");
         }

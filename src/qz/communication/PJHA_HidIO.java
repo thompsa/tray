@@ -22,6 +22,7 @@ public class PJHA_HidIO implements DeviceIO {
     private static final int BUFFER_SIZE = 32;
     private Vector<byte[]> dataBuffer;
     private boolean streaming;
+    private boolean feature = true;
 
 
     public PJHA_HidIO(DeviceOptions dOpts) throws DeviceException {
@@ -87,6 +88,10 @@ public class PJHA_HidIO implements DeviceIO {
 
     public byte[] readData(int responseSize, Byte unused) throws DeviceException {
         byte[] response = new byte[responseSize];
+        if (feature) {
+            device.getFeatureReport(response, responseSize);
+            return response;
+        }
         if (dataBuffer.isEmpty()) {
             return new byte[0]; //no data received yet
         }
@@ -104,7 +109,17 @@ public class PJHA_HidIO implements DeviceIO {
     public void sendData(byte[] data, Byte reportId) throws DeviceException {
         if (reportId == null) { reportId = (byte)0x00; }
 
-        int wrote = device.setOutputReport(reportId, data, data.length);
+        int wrote;
+
+        if (feature) {
+            byte[] report = new byte[1 + data.length];
+            // first byte of data is report ID
+            report[0] = reportId;
+            System.arraycopy(data, 0, data, 1, data.length);
+            wrote = device.setFeatureReport(report, report.length);
+        } else {
+            wrote = device.setOutputReport(reportId, data, data.length);
+        }
         if (wrote == -1) {
             throw new DeviceException("Failed to write to device");
         }
