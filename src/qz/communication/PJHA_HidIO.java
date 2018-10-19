@@ -115,7 +115,7 @@ public class PJHA_HidIO implements DeviceIO {
             byte[] report = new byte[1 + data.length];
             // first byte of data is report ID
             report[0] = reportId;
-            System.arraycopy(data, 0, data, 1, data.length);
+            System.arraycopy(data, 0, report, 1, data.length);
             wrote = device.setFeatureReport(report, report.length);
         } else {
             wrote = device.setOutputReport(reportId, data, data.length);
